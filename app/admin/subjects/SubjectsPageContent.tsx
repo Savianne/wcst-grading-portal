@@ -134,7 +134,7 @@ const SubjectsPageContentFC: React.FC<IStyledFC> = ({className}) => {
     const [addSubjectValidationError, setAddSubjectValidationError] = React.useState<null | string>(null);
     const [submitionError, setSubmitionError] = React.useState<null | string>(null);
     const [submitionSuccess, setSubmitionSuccess] = React.useState(false);
-    const [submittingForm, setSubmittingForm] = React.useState(false)
+    const [submittingForm, setSubmittingForm] = React.useState(false);
     const [loadingSubjects, setLoadingSubjects] = React.useState(true);
     const [tab, setTab] = React.useState("major");
     const [addSubjectDialogOpen, setAddSubjectDialogOpen] = React.useState(false);

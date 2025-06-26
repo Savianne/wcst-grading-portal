@@ -28,13 +28,8 @@ export default async function handler(
 
         if(category == "major") {
             await connection.query("INSERT INTO major_subjects(course_id, year, subject_info) VALUES(?, ?, ?)", [course, year, insertID]);
-
-            //Insert Recors into the table
-            // insertID = String((await connection.query<ResultSetHeader>("INSERT INTO major_subjects(course_id, subject_title, subject_code, year) VALUES(?, ?, ?, ?)", [course, subjectTitle, subjectCode, year]))[0].insertId);
         } else if(category == 'minor') {
              await connection.query("INSERT INTO minor_subjects(subject_info) VALUES(?)", [insertID]);
-            //Insert Recors into the table
-            // insertID = String((await connection.query<ResultSetHeader>("INSERT INTO minor_subjects(subject_title, subject_code) VALUES(?, ?)", [subjectTitle, subjectCode]))[0].insertId);
         }
 
         connection.release();

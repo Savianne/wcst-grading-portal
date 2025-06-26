@@ -7,6 +7,8 @@ import { IStyledFC } from '@/app/types/IStyledFC';
 import IMAGE_SERVER_URL from '@/IMAGE_SERVER_URL';
 import { useErrorAlert } from '@/app/context/PageErrorAlertProvider';
 import { useSuccessAlert } from '@/app/context/PageSuccessAlertProvider';
+import { IGradingSheetStudent } from './Sheet';
+import { useSheetContex } from './Sheet';
 
 //MUI Components
 import { 
@@ -36,20 +38,6 @@ const StudentCard = styled(Paper)`
     flex-direction: column;
     gap: 10px;
 `;
-
-interface IGradingSheetStudent {
-    id: string;
-    student_id: string;
-    grading_sheet_id: string;
-    uid: string;
-    first_name: string;
-    middle_name: string;
-    sex: string;
-    date_of_birth: string;
-    surname: string
-    suffix: string | null;
-    image_path: string | null;
-}
 
 interface ISearchResult {
     student_id: string;
@@ -120,17 +108,11 @@ const SearchItem = styled(SearchresutItemFC)`
     border-left: 2px solid #007afd;
 `
 
-interface IStudentsTabPanelFC extends IStyledFC {
-    gradingSheetId: string
-}
-
-const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSheetId}) => {
+const StudentsTabPanelFC: React.FC<IStyledFC> = ({className}) => {
+    const sheet = useSheetContex();
     const {setError} = useErrorAlert();
-    const { setMessage} = useSuccessAlert()
     const [tab, setTab] = React.useState<"all" | "male" | "female">("all");
-    const [students, setStudents] = React.useState<IGradingSheetStudent[]>([]);
     const [searchResult, setSearchResult] = React.useState<ISearchResult[]>([]);
-    const [loadingStudents, setLoadingStudents] = React.useState(true);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [isSearching, setIsSearching] = React.useState(true);
 
@@ -152,7 +134,7 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                     url: "/api/search-grading-sheet-students",
                     method: "POST",
                     data: {
-                        sheetId: gradingSheetId,
+                        sheetId: sheet.gradingSheet.id,
                         searchTerm
                     },
                     cancelToken: cancelTokenSource.token
@@ -186,31 +168,6 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
         debouncedSearch(value);
     }
 
-    React.useEffect(() => {
-        setLoadingStudents(true)
-        fetch('/api/get-grading-sheet-students', {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({sheetId: gradingSheetId})
-        })
-        .then(response => {
-            if(response.ok) return response.json()
-        })
-        .then(data => {
-            setStudents([...data.data]);
-        })
-        .catch(err => {
-            console.log(err)
-        })
-        .finally(() => {
-            setTimeout(() => {
-                setLoadingStudents(false)
-            }, 1000)
-        })
-    }, [])
-
     return(
         <div className={className}> 
             <div className="panel-heading">
@@ -218,7 +175,7 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                     <Chip
                     clickable
                     icon={<WcIcon />}
-                    label={`ALL: ${students.length}`}
+                    label={`ALL: ${sheet.students.length}`}
                     variant={tab == "all"? "filled" : "outlined"}
                     color={tab == "all"? "primary" : "default"}
                     onClick={() => setTab("all")}
@@ -226,7 +183,7 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                     <Chip
                     clickable
                     icon={<ManIcon />}
-                    label={`Male: ${students.filter(i => i.sex.toLowerCase() == "male").length}`}
+                    label={`Male: ${sheet.students.filter(i => i.sex.toLowerCase() == "male").length}`}
                     variant={tab == "male"? "filled" : "outlined"}
                     color={tab == "male"? "primary" : "default"}
                     onClick={() => setTab("male")}
@@ -234,7 +191,7 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                     <Chip
                     clickable
                     icon={<WomanIcon />}
-                    label={`Male: ${students.filter(i => i.sex.toLowerCase() == "female").length}`}
+                    label={`Female: ${sheet.students.filter(i => i.sex.toLowerCase() == "female").length}`}
                     variant={tab == "female"? "filled" : "outlined"}
                     color={tab == "female"? "primary" : "default"}
                     onClick={() => setTab("female")}
@@ -257,29 +214,27 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                     {
                         searchResult.map(result => (
                             <SearchItem key={result.student_id} resultData={result} onAddSuccess={(id) => {
-                                setStudents([{
-                                    id,
+                                sheet.dataUpdate.students([{
                                     student_id: result.student_id,
-                                    grading_sheet_id: gradingSheetId,
-                                    uid: result.student_id,
-                                    first_name: result.middle_name,
+                                    grading_sheet_id: sheet.gradingSheet.id,
+                                    first_name: result.first_name,
                                     middle_name: result.middle_name,
                                     sex: result.sex,
                                     date_of_birth: result.date_of_birth,
                                     surname: result.surname,
                                     suffix: result.suffix,
                                     image_path: result.picture
-                                }, ...students]);
+                                }, ...sheet.students]);
 
                                 setSearchResult([...searchResult.map(i => ({...i, is_member: i.student_id == result.student_id? 1 : i.is_member}))])
-                            }} sheetId={gradingSheetId} />
+                            }} sheetId={sheet.gradingSheet?.id as string} />
                         ))
                     }
                 </div> : ""
             }
             <div className="panel-body">
                 {
-                    loadingStudents? <>
+                    sheet.loadingState.students.isLoading? <>
                         <Skeleton variant="rounded" width={"100%"} height={200} />
                         <Skeleton variant="rounded" width={"100%"} height={200} />
                         <Skeleton variant="rounded" width={"100%"} height={200} />
@@ -292,11 +247,11 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                         <Skeleton variant="rounded" width={"100%"} height={200} />
                     </> : <>
                         {
-                            students.length? <>
+                            sheet.students.length? <>
                                 {
                                     tab == "all"? <>
                                         {
-                                            students.map(student => (
+                                            sheet.students.map(student => (
                                                 <StudentCard key={student.student_id}>
                                                     <Avatar sx={{width: '100px', height: '100px'}} src={student.image_path? `${IMAGE_SERVER_URL}/images/avatar/${student.image_path}` : undefined} />
                                                     <h3>{student.first_name} {student.middle_name[0]}. {student.surname}</h3>
@@ -308,9 +263,9 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                                 {
                                     tab == "female"? <>
                                         {
-                                            students.filter(student => student.sex.toLowerCase() == "female").length? <>
+                                            sheet.students.filter(student => student.sex.toLowerCase() == "female").length? <>
                                                 {
-                                                    students.filter(student => student.sex.toLowerCase() == "female").map(student => (
+                                                    sheet.students.filter(student => student.sex.toLowerCase() == "female").map(student => (
                                                         <StudentCard key={student.student_id}>
                                                             <Avatar sx={{width: '100px', height: '100px'}} src={student.image_path? `${IMAGE_SERVER_URL}/images/avatar/${student.image_path}` : undefined} />
                                                             <h3>{student.first_name} {student.middle_name[0]}. {student.surname}</h3>
@@ -327,9 +282,9 @@ const StudentsTabPanelFC: React.FC<IStudentsTabPanelFC> = ({className, gradingSh
                                 {
                                     tab == "male"? <>
                                         {
-                                            students.filter(student => student.sex.toLowerCase() == "male").length? <>
+                                            sheet.students.filter(student => student.sex.toLowerCase() == "male").length? <>
                                                 {
-                                                    students.filter(student => student.sex.toLowerCase() == "male").map(student => (
+                                                    sheet.students.filter(student => student.sex.toLowerCase() == "male").map(student => (
                                                         <StudentCard key={student.student_id}>
                                                             <Avatar sx={{width: '100px', height: '100px'}} src={student.image_path? `${IMAGE_SERVER_URL}/images/avatar/${student.image_path}` : undefined} />
                                                             <h3>{student.first_name} {student.middle_name[0]}. {student.surname}</h3>
